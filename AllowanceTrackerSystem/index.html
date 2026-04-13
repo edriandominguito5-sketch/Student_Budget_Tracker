@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Expense Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        .box {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #2d89ef;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1b66c9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        .message {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Student Expense Tracker</h1>
+    <div id="message" class="message"></div>
+
+    <div id="loginBox" class="box">
+        <h2>Login or Create Profile</h2>
+
+        <label for="loginId">Student ID</label>
+        <input type="text" id="loginId">
+        <button onclick="login()">Login</button>
+
+        <hr>
+
+        <label for="studentName">Student Name</label>
+        <input type="text" id="studentName">
+
+        <label for="studentId">Student ID</label>
+        <input type="text" id="studentId">
+        <button onclick="createProfile()">Create Profile</button>
+    </div>
+
+    <div id="mainBox" class="hidden">
+        <div class="box">
+            <h2>Profile</h2>
+            <p><strong>Name:</strong> <span id="profileName"></span></p>
+            <p><strong>Student ID:</strong> <span id="profileId"></span></p>
+            <p><strong>Total Allowance:</strong> <span id="totalAllowance">0.00</span></p>
+            <p><strong>Total Expenses:</strong> <span id="totalExpenses">0.00</span></p>
+            <p><strong>Remaining Balance:</strong> <span id="remainingBalance">0.00</span></p>
+        </div>
+
+        <div class="box">
+            <h2>Add Allowance</h2>
+            <label for="allowanceAmount">Amount</label>
+            <input type="number" id="allowanceAmount" step="0.01">
+            <button onclick="addAllowance()">Add Allowance</button>
+        </div>
+
+        <div class="box">
+            <h2>Record Expense</h2>
+            <label for="expenseName">Expense Name</label>
+            <input type="text" id="expenseName">
+
+            <label for="expenseAmount">Amount</label>
+            <input type="number" id="expenseAmount" step="0.01">
+
+            <label for="expenseCategory">Category</label>
+            <select id="expenseCategory">
+                <option value="Food">Food</option>
+                <option value="Fare">Fare</option>
+                <option value="School">School</option>
+                <option value="Personal">Personal</option>
+                <option value="Others">Others</option>
+            </select>
+
+            <button onclick="addExpense()">Record Expense</button>
+        </div>
+
+        <div class="box">
+            <h2>Expense History</h2>
+            <div id="expenseList">No expenses yet.</div>
+        </div>
+
+        <div class="box">
+            <button onclick="clearData()">Clear Data</button>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentStudentId = "";
+
+    function showMessage(text, ok) {
+        const message = document.getElementById("message");
+        message.textContent = text;
+        message.style.color = ok ? "green" : "red";
+    }
+
+    async function sendAction(values) {
+        const body = new URLSearchParams(values).toString();
+        const response = await fetch("/action", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body
+        });
+        return await response.json();
+    }
+
+    async function login() {
+        const studentId = document.getElementById("loginId").value.trim();
+        const data = await sendAction({ action: "login", studentId: studentId });
+        handleData(data);
+    }
+
+    async function createProfile() {
+        const name = document.getElementById("studentName").value.trim();
+        const studentId = document.getElementById("studentId").value.trim();
+        const data = await sendAction({
+            action: "create",
+            name: name,
+            studentId: studentId
+        });
+        handleData(data);
+    }
+
+    async function addAllowance() {
+        const amount = document.getElementById("allowanceAmount").value.trim();
+        const data = await sendAction({
+            action: "allowance",
+            studentId: currentStudentId,
+            amount: amount
+        });
+        handleData(data);
+        document.getElementById("allowanceAmount").value = "";
+    }
+
+    async function addExpense() {
+        const name = document.getElementById("expenseName").value.trim();
+        const amount = document.getElementById("expenseAmount").value.trim();
+        const category = document.getElementById("expenseCategory").value;
+        const data = await sendAction({
+            action: "expense",
+            studentId: currentStudentId,
+            name: name,
+            amount: amount,
+            category: category
+        });
+        handleData(data);
+        document.getElementById("expenseName").value = "";
+        document.getElementById("expenseAmount").value = "";
+    }
+
+    async function clearData() {
+        const data = await sendAction({
+            action: "clear",
+            studentId: currentStudentId
+        });
+        handleData(data);
+    }
+
+    function logout() {
+        currentStudentId = "";
+        document.getElementById("loginBox").classList.remove("hidden");
+        document.getElementById("mainBox").classList.add("hidden");
+        document.getElementById("loginId").value = "";
+        document.getElementById("studentName").value = "";
+        document.getElementById("studentId").value = "";
+        document.getElementById("allowanceAmount").value = "";
+        document.getElementById("expenseName").value = "";
+        document.getElementById("expenseAmount").value = "";
+        showMessage("Logged out.", true);
+    }
+
+    function handleData(data) {
+        if (!data.ok) {
+            showMessage(data.message, false);
+            return;
+        }
+
+        currentStudentId = data.studentId;
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("mainBox").classList.remove("hidden");
+
+        document.getElementById("profileName").textContent = data.name;
+        document.getElementById("profileId").textContent = data.studentId;
+        document.getElementById("totalAllowance").textContent = Number(data.totalAllowance).toFixed(2);
+        document.getElementById("totalExpenses").textContent = Number(data.totalExpenses).toFixed(2);
+        document.getElementById("remainingBalance").textContent = Number(data.remainingBalance).toFixed(2);
+
+        renderExpenses(data.expenses);
+        showMessage(data.message, true);
+    }
+
+    function renderExpenses(expenses) {
+        const expenseList = document.getElementById("expenseList");
+
+        if (!expenses || expenses.length === 0) {
+            expenseList.innerHTML = "No expenses yet.";
+            return;
+        }
+
+        let html = "<table>";
+        html += "<tr><th>No.</th><th>Name</th><th>Amount</th><th>Category</th></tr>";
+
+        for (let i = 0; i < expenses.length; i++) {
+            html += "<tr>";
+            html += "<td>" + (i + 1) + "</td>";
+            html += "<td>" + expenses[i].name + "</td>";
+            html += "<td>" + Number(expenses[i].amount).toFixed(2) + "</td>";
+            html += "<td>" + expenses[i].category + "</td>";
+            html += "</tr>";
+        }
+
+        html += "</table>";
+        expenseList.innerHTML = html;
+    }
+</script>
+</body>
+</html>
