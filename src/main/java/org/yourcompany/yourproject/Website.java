@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public class SimpleWebsite {
+public class Website {
     private static final int PORT = 8080;
     private static final String DATA_FOLDER = "data";
 

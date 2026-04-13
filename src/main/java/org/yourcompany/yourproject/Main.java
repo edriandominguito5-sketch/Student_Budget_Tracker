@@ -5,7 +5,7 @@ import java.io.IOException;
 public class Main {
     public static void main(String[] args) {
         try {
-            SimpleWebsite.start();
+            Website.start();
         } catch (IOException e) {
             System.out.println("Unable to start website: " + e.getMessage());
         }
